@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    environment:
+      # Opcional: Si quieres forzar una URL específica del backend
+      # VITE_API_URL: "http://backend:8000"
+      - NODE_ENV=production
+    networks:
+      - gesbar-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # Backend - Reemplaza con tu configuración real
+  backend:
+    # Opción 1: Si tienes imagen en Docker Hub
+    # image: tu-usuario/gesbar-backend:latest
+    
+    # Opción 2: Si construyes desde código fuente
+    # build: 
+    #   context: ../path-to-backend
+    #   dockerfile: Dockerfile
+    
+    # Temporal: placeholder para testing
+    image: nginx:alpine
+    ports:
+      - "8000:80"
+    networks:
+      - gesbar-network
+    restart: unless-stopped
+    # environment:
+    #   - DATABASE_URL=postgresql://user:pass@db:5432/gesbar
+    #   - JWT_SECRET=your-secret-key
+
+networks:
+  gesbar-network:
+    driver: bridge
+
+# Opcional: Para persistir datos
+volumes:
+  gesbar-data:
+    driver: local

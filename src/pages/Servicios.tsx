@@ -133,7 +133,7 @@ const Servicios = () => {
     setAssigning(true);
     setAssignError(null);
     try {
-      await apiClient.put(`/barberos/${selectedBarberoId}`, {
+      await apiClient.post(`/barberos/${selectedBarberoId}/asignacion`, {
         servicios: selectedServicioIds
       });
       setShowAssignModal(false);

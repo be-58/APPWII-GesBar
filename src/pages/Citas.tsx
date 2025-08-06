@@ -94,8 +94,27 @@ const Citas = () => {
         metodo_pago: 'en_local',
       });
       setToast({ type: 'success', message: '¡Cita creada exitosamente!' });
-    } catch (error) {
-      setToast({ type: 'error', message: 'Error al crear cita.' });
+    } catch (error: any) {
+      let errorMsg = 'Error al crear cita.';
+      // Si la respuesta tiene un mensaje específico, mostrarlo
+      if (error?.response?.data) {
+        const data = error.response.data;
+        if (typeof data === 'object' && data !== null) {
+          // Si viene en formato { campo: ["mensaje"] }
+          const firstKey = Object.keys(data)[0];
+          const value = data[firstKey];
+          if (Array.isArray(value) && value.length > 0) {
+            errorMsg = value[0];
+          } else if (typeof value === 'string') {
+            errorMsg = value;
+          }
+        } else if (typeof data === 'string') {
+          errorMsg = data;
+        }
+      } else if (error?.response?.status === 500) {
+        errorMsg = 'Error al crear cita.';
+      }
+      setToast({ type: 'error', message: errorMsg });
       console.error('Error al crear cita:', error);
     }
 

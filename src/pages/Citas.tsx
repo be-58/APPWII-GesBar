@@ -1,37 +1,26 @@
-
-  // Sincroniza barberos al cargar o actualizar (debe ir después de formData y filteredBarberos)
-
 // src/pages/Citas.tsx
 import React, { useState } from 'react';
 import useApiClient from '../hooks/useApiClient';
 import { useCompletarCita } from '../hooks/useCompletarCita';
 import { useCitas, type CreateCitaDto } from '../hooks/useCitas';
 import { useServicios } from '../hooks/useServicios';
-// import { useBarberos } from '../hooks/useBarberos';
 import { useAuthStore } from '../hooks/useAuth';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
-
-// Extiende el tipo Servicio para incluir barberos
 
 const Citas = () => {
   const { user } = useAuthStore();
   const { misCitas, isLoading, crearCita } = useCitas();
   const { servicios } = useServicios(1);
 
+  // Determinar roles
+  const isBarbero = user?.role?.nombre === 'barbero';
+  const isDueno = user?.role?.nombre === 'dueño';
+  const isCliente = user?.role?.nombre === 'cliente';
 
-
-  // Cuando cambia el servicio, resetea el barbero seleccionado
-  const handleServicioChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const servicioId = e.target.value;
-    setFormData({ ...formData, servicio_id: servicioId, barbero_id: '' });
-  };
-
-  
+  // Estados del formulario (solo para clientes)
   const [showForm, setShowForm] = useState(false);
-  const [selectedCita, setSelectedCita] = useState<any | null>(null);
-  const [showDetalleModal, setShowDetalleModal] = useState(false);
   const [formData, setFormData] = useState({
     barberia_id: 1,
     fecha: '',
@@ -40,20 +29,29 @@ const Citas = () => {
     barbero_id: '',
     metodo_pago: 'en_local' as const,
   });
-  // Filtro de citas
+  const [formError, setFormError] = useState<string | null>(null);
+
+  // Estados para modales y filtros
+  const [selectedCita, setSelectedCita] = useState<any | null>(null);
+  const [showDetalleModal, setShowDetalleModal] = useState(false);
   const [showFiltro, setShowFiltro] = useState(false);
   const [filtro, setFiltro] = useState<{ estado?: string; barbero_id?: string }>({});
-  // Obtiene los barberos del servicio seleccionado
-  const selectedServicio = (servicios as any[] | undefined)?.find((s) => s.id === parseInt(formData.servicio_id));
+
+  // Lógica para obtener barberos del servicio seleccionado (solo para clientes)
+  const selectedServicio = isCliente ? (servicios as any[] | undefined)?.find((s) => s.id === parseInt(formData.servicio_id)) : null;
   const barberosDelServicio = selectedServicio?.barberos || [];
 
-  // (MOVER useEffect después de formData para evitar error de variable usada antes de declarar)
+  // Handlers del formulario (solo para clientes)
+  const handleServicioChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (!isCliente) return;
+    const servicioId = e.target.value;
+    setFormData({ ...formData, servicio_id: servicioId, barbero_id: '' });
+  };
 
-  const isBarbero = user?.role?.nombre === 'barbero';
-
-  const [formError, setFormError] = useState<string | null>(null);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isCliente) return;
+    
     setFormError(null);
     // Validar fecha no pasada
     const hoy = new Date();
@@ -63,6 +61,7 @@ const Citas = () => {
       setFormError('No puedes agendar citas en fechas pasadas.');
       return;
     }
+    
     try {
       const citaData: CreateCitaDto = {
         barberia_id: formData.barberia_id,
@@ -132,7 +131,9 @@ const Citas = () => {
     const [comentario, setComentario] = useState('');
     const [calificando, setCalificando] = useState(false);
     const [calificarError, setCalificarError] = useState<string|null>(null);
+    
     if (!cita) return null;
+    
     // El backend retorna barbero_id (id del barbero), y el usuario logueado tiene user.barbero.id
     const esBarbero = user?.role?.nombre === 'barbero' && user?.barbero?.id === cita.barbero_id;
     const esCliente = user?.role?.nombre === 'cliente' && (cita.cliente_id === user?.id || cita.user_id === user?.id);
@@ -275,6 +276,20 @@ const Citas = () => {
     );
   };
 
+  // Función para obtener el título del header según el rol
+  const getHeaderTitle = () => {
+    if (isBarbero) return 'Mis Citas Asignadas';
+    if (isDueno) return 'Gestión de Citas';
+    return 'Mis Citas';
+  };
+
+  // Función para obtener la descripción del header según el rol
+  const getHeaderDescription = () => {
+    if (isBarbero) return 'Administra las citas que tienes asignadas';
+    if (isDueno) return 'Supervisa todas las citas de la barbería';
+    return 'Gestiona todas tus citas de manera eficiente';
+  };
+
   return (
     <div className="space-y-8">
       {/* Header con estadísticas */}
@@ -282,9 +297,9 @@ const Citas = () => {
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center">
           <div className="mb-6 lg:mb-0">
             <h1 className="text-3xl font-bold mb-2">
-              {isBarbero ? 'Mis Citas Asignadas' : 'Mis Citas'}
+              {getHeaderTitle()}
             </h1>
-            <p className="text-blue-100">Gestiona todas tus citas de manera eficiente</p>
+            <p className="text-blue-100">{getHeaderDescription()}</p>
           </div>
           
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -303,25 +318,44 @@ const Citas = () => {
         </div>
       </div>
 
-      {/* Action buttons */}
-      <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-4">
-          <Button 
-            onClick={() => setShowForm(true)}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Nueva Cita
-          </Button>
-      <Button variant="outline" onClick={() => setShowFiltro(true)}>
-        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
-        </svg>
-        Filtrar
-      </Button>
-      {/* Modal de filtro */}
+      {/* Action buttons - Solo para cliente */}
+      {isCliente && (
+        <div className="flex justify-between items-center">
+          <div className="flex items-center space-x-4">
+            <Button 
+              onClick={() => setShowForm(true)}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Nueva Cita
+            </Button>
+            <Button variant="outline" onClick={() => setShowFiltro(true)}>
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
+              </svg>
+              Filtrar
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Action buttons para dueño y barbero - Solo filtrar */}
+      {(isDueno || isBarbero) && (
+        <div className="flex justify-between items-center">
+          <div className="flex items-center space-x-4">
+            <Button variant="outline" onClick={() => setShowFiltro(true)}>
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
+              </svg>
+              Filtrar Citas
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de filtro - Para todos los roles */}
       {showFiltro && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-xs mx-4 relative">
@@ -378,11 +412,9 @@ const Citas = () => {
           </div>
         </div>
       )}
-        </div>
-      </div>
 
-      {/* Formulario de nueva cita */}
-      {showForm && (
+      {/* Formulario de nueva cita - Solo para clientes */}
+      {isCliente && showForm && (
         <div className="bg-white shadow-xl rounded-xl p-8 border">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900">Nueva Cita</h2>
@@ -504,14 +536,23 @@ const Citas = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
-          <h3 className="text-xl font-medium text-gray-900 mb-2">No hay citas programadas</h3>
-          <p className="text-gray-600 mb-8">¡Programa tu primera cita para comenzar!</p>
-          <Button 
-            onClick={() => setShowForm(true)}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-          >
-            Programar Primera Cita
-          </Button>
+          <h3 className="text-xl font-medium text-gray-900 mb-2">
+            {isCliente ? 'No hay citas programadas' : 'No hay citas disponibles'}
+          </h3>
+          <p className="text-gray-600 mb-8">
+            {isCliente ? '¡Programa tu primera cita para comenzar!' : 
+             isBarbero ? 'No tienes citas asignadas en este momento.' :
+             'No hay citas registradas en el sistema.'}
+          </p>
+          {/* Solo mostrar botón de crear cita si es cliente */}
+          {isCliente && (
+            <Button 
+              onClick={() => setShowForm(true)}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+            >
+              Programar Primera Cita
+            </Button>
+          )}
         </div>
       ) : (
         <div className="bg-white shadow-sm rounded-xl border overflow-hidden">
@@ -584,7 +625,8 @@ const Citas = () => {
                     <Button size="sm" variant="outline" onClick={() => { setSelectedCita(cita); setShowDetalleModal(true); }}>
                       Ver Detalles
                     </Button>
-                    {cita.estado === 'pendiente' && (
+                    {/* Solo mostrar botón de confirmar si es dueño o barbero y la cita está pendiente */}
+                    {(isDueno || (isBarbero && user?.barbero?.id === cita.barbero_id)) && cita.estado === 'pendiente' && (
                       <Button size="sm" className="bg-green-600 hover:bg-green-700">
                         Confirmar
                       </Button>
@@ -596,6 +638,7 @@ const Citas = () => {
           </div>
         </div>
       )}
+      
       {/* Modal de detalles de cita */}
       {showDetalleModal && selectedCita && (
         <DetalleCitaModal cita={selectedCita} onClose={() => setShowDetalleModal(false)} />

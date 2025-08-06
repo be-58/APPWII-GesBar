@@ -370,20 +370,12 @@ const Barberos = () => {
                       variant="outline"
                       size="sm"
                       className="flex-1"
-                      onClick={() => console.log('Ver barbero', barbero.id)}
-                    >
-                      Ver
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
                       onClick={() => {
                         setSelectedBarbero(barbero);
                         setShowEditModal(true);
                       }}
                     >
-                      Editar
+                      Ver Información
                     </Button>
                   </div>
                 </div>

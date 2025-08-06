@@ -8,7 +8,20 @@ import { useAuthStore } from '../hooks/useAuth';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
-
+// Toast modal
+const ToastModal = ({ type, message, onClose }: { type: 'success' | 'error'; message: string; onClose: () => void }) => (
+  <div className={`fixed bottom-6 right-6 z-[9999] px-6 py-4 rounded-lg shadow-lg flex items-center space-x-3 ${type === 'success' ? 'bg-green-100 border border-green-400 text-green-800' : 'bg-red-100 border border-red-400 text-red-800'}`}>
+    <span>
+      {type === 'success' ? (
+        <svg className="w-6 h-6 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+      ) : (
+        <svg className="w-6 h-6 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+      )}
+    </span>
+    <span className="font-medium">{message}</span>
+    <button className="ml-4 text-lg font-bold" onClick={onClose}>&times;</button>
+  </div>
+);
 const Citas = () => {
   const { user } = useAuthStore();
   const { misCitas, isLoading, crearCita } = useCitas();
@@ -30,6 +43,7 @@ const Citas = () => {
     metodo_pago: 'en_local' as const,
   });
   const [formError, setFormError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Estados para modales y filtros
   const [selectedCita, setSelectedCita] = useState<any | null>(null);
@@ -51,17 +65,15 @@ const Citas = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isCliente) return;
-    
     setFormError(null);
     // Validar fecha no pasada
     const hoy = new Date();
-    hoy.setHours(0,0,0,0);
+    hoy.setHours(0, 0, 0, 0);
     const fechaSeleccionada = new Date(formData.fecha);
     if (fechaSeleccionada < hoy) {
-      setFormError('No puedes agendar citas en fechas pasadas.');
+      setToast({ type: 'error', message: 'No puedes agendar citas en fechas pasadas.' });
       return;
     }
-    
     try {
       const citaData: CreateCitaDto = {
         barberia_id: formData.barberia_id,
@@ -81,10 +93,12 @@ const Citas = () => {
         barbero_id: '',
         metodo_pago: 'en_local',
       });
+      setToast({ type: 'success', message: '¡Cita creada exitosamente!' });
     } catch (error) {
-      setFormError('Error al crear cita.');
+      setToast({ type: 'error', message: 'Error al crear cita.' });
       console.error('Error al crear cita:', error);
     }
+
   };
 
   const getStatusBadgeColor = (estado: string) => {
@@ -130,10 +144,10 @@ const Citas = () => {
     const [calificacion, setCalificacion] = useState(5);
     const [comentario, setComentario] = useState('');
     const [calificando, setCalificando] = useState(false);
-    const [calificarError, setCalificarError] = useState<string|null>(null);
-    
+    const [calificarError, setCalificarError] = useState<string | null>(null);
+
     if (!cita) return null;
-    
+
     // El backend retorna barbero_id (id del barbero), y el usuario logueado tiene user.barbero.id
     const esBarbero = user?.role?.nombre === 'barbero' && user?.barbero?.id === cita.barbero_id;
     const esCliente = user?.role?.nombre === 'cliente' && (cita.cliente_id === user?.id || cita.user_id === user?.id);
@@ -203,8 +217,8 @@ const Citas = () => {
                 <div className="flex items-center mb-1">
                   <b>Calificación:</b>
                   <span className="ml-2 text-yellow-500 font-bold">
-                    {Array.from({length: cita.calificacion.puntuacion}).map((_,i) => (
-                      <svg key={i} className="inline w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z"/></svg>
+                    {Array.from({ length: cita.calificacion.puntuacion }).map((_, i) => (
+                      <svg key={i} className="inline w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" /></svg>
                     ))}
                   </span>
                 </div>
@@ -237,7 +251,7 @@ const Citas = () => {
                   <div>
                     <Label>Puntuación</Label>
                     <div className="flex space-x-1 mt-2">
-                      {[1,2,3,4,5].map((star) => (
+                      {[1, 2, 3, 4, 5].map((star) => (
                         <button
                           type="button"
                           key={star}
@@ -245,7 +259,7 @@ const Citas = () => {
                           className={star <= calificacion ? 'text-yellow-400' : 'text-gray-300'}
                           aria-label={`Puntuación ${star}`}
                         >
-                          <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z"/></svg>
+                          <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" /></svg>
                         </button>
                       ))}
                     </div>
@@ -301,7 +315,7 @@ const Citas = () => {
             </h1>
             <p className="text-blue-100">{getHeaderDescription()}</p>
           </div>
-          
+
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { label: "Total", value: citas.length, color: "bg-white/10" },
@@ -322,7 +336,7 @@ const Citas = () => {
       {isCliente && (
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-4">
-            <Button 
+            <Button
               onClick={() => setShowForm(true)}
               className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
             >
@@ -453,7 +467,7 @@ const Citas = () => {
                 />
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <Label htmlFor="servicio_id">Servicio</Label>
@@ -510,15 +524,15 @@ const Citas = () => {
               <div className="text-red-600 text-sm mb-2">{formError}</div>
             )}
             <div className="flex space-x-4 pt-4">
-              <Button 
+              <Button
                 type="submit"
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
               >
                 Crear Cita
               </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => setShowForm(false)}
               >
                 Cancelar
@@ -540,13 +554,13 @@ const Citas = () => {
             {isCliente ? 'No hay citas programadas' : 'No hay citas disponibles'}
           </h3>
           <p className="text-gray-600 mb-8">
-            {isCliente ? '¡Programa tu primera cita para comenzar!' : 
-             isBarbero ? 'No tienes citas asignadas en este momento.' :
-             'No hay citas registradas en el sistema.'}
+            {isCliente ? '¡Programa tu primera cita para comenzar!' :
+              isBarbero ? 'No tienes citas asignadas en este momento.' :
+                'No hay citas registradas en el sistema.'}
           </p>
           {/* Solo mostrar botón de crear cita si es cliente */}
           {isCliente && (
-            <Button 
+            <Button
               onClick={() => setShowForm(true)}
               className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
             >
@@ -561,7 +575,7 @@ const Citas = () => {
               {citas.length} cita{citas.length !== 1 ? 's' : ''} encontrada{citas.length !== 1 ? 's' : ''}
             </h2>
           </div>
-          
+
           <div className="divide-y divide-gray-100">
             {citas.map((cita: any) => (
               <div key={cita.id} className="p-6 hover:bg-gray-50 transition-colors">
@@ -638,10 +652,14 @@ const Citas = () => {
           </div>
         </div>
       )}
-      
+
       {/* Modal de detalles de cita */}
       {showDetalleModal && selectedCita && (
         <DetalleCitaModal cita={selectedCita} onClose={() => setShowDetalleModal(false)} />
+      )}
+      {/* Toast modal */}
+      {toast && (
+        <ToastModal type={toast.type} message={toast.message} onClose={() => setToast(null)} />
       )}
     </div>
   );

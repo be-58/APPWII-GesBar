@@ -63,9 +63,10 @@ const EditBarberoModal = ({ isOpen, onClose, barbero, onUpdate }: EditBarberoMod
       });
       
       setSelectedServicios(barbero.servicios?.map(s => s.id) || []);
-      setHorarios(barbero.horarios?.length > 0 ? barbero.horarios : [
-        { dia_semana: '', hora_inicio: '', hora_fin: '' }
-      ]);
+      setHorarios(Array.isArray(barbero.horarios) && barbero.horarios.length > 0
+        ? barbero.horarios
+        : [{ dia_semana: '', hora_inicio: '', hora_fin: '' }]
+      );
       setActiveTab('info');
       setError(null);
     }

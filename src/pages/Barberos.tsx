@@ -15,10 +15,6 @@ const CreateBarberoModal = ({ isOpen, onClose, onSubmit, isLoading }: {
   onSubmit: (data: any) => void;
   isLoading: boolean;
 }) => {
-
-
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedBarbero, setSelectedBarbero] = useState(null);
   const { servicios = [] } = useServicios(1);
   const [formData, setFormData] = useState({
     nombre: '',
@@ -199,7 +195,7 @@ const Barberos = () => {
 
   // Estados para el modal de edición
   const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedBarbero, setSelectedBarbero] = useState(null);
+  const [selectedBarbero, setSelectedBarbero] = useState<any>(null);
 
   if (!canManageBarberos) {
     return (
@@ -397,7 +393,6 @@ const Barberos = () => {
         </div>
       </div>
 
-
       {/* Modal Crear Barbero */}
       <CreateBarberoModal
         isOpen={showCreateModal}
@@ -415,8 +410,8 @@ const Barberos = () => {
         }}
         barbero={selectedBarbero}
         onUpdate={() => {
-          // Refrescar la lista de barberos
           setShowEditModal(false);
+          setSelectedBarbero(null);
         }}
       />
 

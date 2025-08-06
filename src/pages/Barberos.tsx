@@ -6,6 +6,7 @@ import { Label } from '../components/ui/Label';
 import { useBarberosPage } from '../hooks/useBarberosPage';
 import { useState } from 'react';
 import { useServicios } from '../hooks/useServicios';
+import EditBarberoModal from '../components/EditBarberoModal';
 
 // Modal para crear barbero (copiado de Barberos_NEW)
 const CreateBarberoModal = ({ isOpen, onClose, onSubmit, isLoading }: {
@@ -15,6 +16,9 @@ const CreateBarberoModal = ({ isOpen, onClose, onSubmit, isLoading }: {
   isLoading: boolean;
 }) => {
 
+
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedBarbero, setSelectedBarbero] = useState(null);
   const { servicios = [] } = useServicios(1);
   const [formData, setFormData] = useState({
     nombre: '',
@@ -193,6 +197,10 @@ const Barberos = () => {
     handleCreateBarbero,
   } = useBarberosPage();
 
+  // Estados para el modal de edición
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedBarbero, setSelectedBarbero] = useState(null);
+
   if (!canManageBarberos) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
@@ -338,11 +346,10 @@ const Barberos = () => {
                         <p className="text-sm text-gray-500">{barbero.user.email}</p>
                       </div>
                     </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      barbero.estado === 'activo' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${barbero.estado === 'activo'
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
+                      }`}>
                       {barbero.estado}
                     </span>
                   </div>
@@ -375,7 +382,10 @@ const Barberos = () => {
                       variant="outline"
                       size="sm"
                       className="flex-1"
-                      onClick={() => console.log('Editar barbero', barbero.id)}
+                      onClick={() => {
+                        setSelectedBarbero(barbero);
+                        setShowEditModal(true);
+                      }}
                     >
                       Editar
                     </Button>
@@ -387,12 +397,27 @@ const Barberos = () => {
         </div>
       </div>
 
-      {/* Modal */}
+
+      {/* Modal Crear Barbero */}
       <CreateBarberoModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSubmit={handleCreateBarbero}
         isLoading={isCreating}
+      />
+
+      {/* Modal Editar Barbero */}
+      <EditBarberoModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedBarbero(null);
+        }}
+        barbero={selectedBarbero}
+        onUpdate={() => {
+          // Refrescar la lista de barberos
+          setShowEditModal(false);
+        }}
       />
 
       {/* Error handling */}
